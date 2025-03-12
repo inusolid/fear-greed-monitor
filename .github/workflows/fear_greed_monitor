@@ -1,0 +1,26 @@
+name: Fetch Fear & Greed Index
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"  # 30分ごとに実行
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  fetch_and_notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run script
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python fetch_fear_greed.py
