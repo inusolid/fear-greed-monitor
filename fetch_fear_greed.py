@@ -1,14 +1,14 @@
 import os
 import requests
 
+# Discord WebhookのURLを環境変数から取得
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
 def send_discord_notification(message):
+    """Discordに通知を送信"""
     if not DISCORD_WEBHOOK_URL:
         print("❌ ERROR: DISCORD_WEBHOOK_URL が設定されていません")
         return
-    
-    print(f"✅ Webhook URL: {DISCORD_WEBHOOK_URL[:50]}... (省略)")  # Webhook URLの一部を出力
 
     payload = {"content": message}
     headers = {"Content-Type": "application/json"}
@@ -21,25 +21,21 @@ def send_discord_notification(message):
         raise Exception(f"❌ Webhook送信エラー: {response.status_code}, {response.text}")
 
 def get_fear_greed_index():
-    url = "https://edition.cnn.com/markets/fear-and-greed"
-    headers = {"User-Agent": "Mozilla/5.0"}
+    """Alternative.meのFear & Greed Index APIからデータを取得"""
+    url = "https://api.alternative.me/fng/"
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url)
         print(f"🌍 HTTP Status Code: {response.status_code}")  # ステータスコード出力
-        print(f"🔍 Response Headers: {response.headers}")  # ヘッダー出力
-        print(f"📝 Response Content (前100文字): {response.text[:100]}")  # レスポンス内容の一部を出力
+        print(f"📝 Response JSON: {response.json()}")  # レスポンス内容を出力
 
         if response.status_code != 200:
-            print("❌ ERROR: CNN Fear & Greed Indexの取得に失敗しました")
+            print("❌ ERROR: Fear & Greed Indexの取得に失敗しました")
             return None
 
-        # Fear & Greed Indexをパースする（仮の処理）
-        if "Fear & Greed Index" not in response.text:
-            print("❌ ERROR: 解析できませんでした")
-            return None
+        data = response.json()
+        index = int(data["data"][0]["value"])  # Fear & Greed Indexの数値を取得
 
-        index = 10  # 仮の値（ここを正しく取得する処理に修正する）
         return index
 
     except Exception as e:
@@ -52,4 +48,7 @@ if __name__ == "__main__":
         print("❌ ERROR: Failed to fetch Fear & Greed Index")
     else:
         print(f"✅ Fear & Greed Index: {index}")
-        send_discord_notification(f"🔔 Fear & Greed Index: {index}")
+
+        # **ここで通知のしきい値を変更**
+        if index <= 20:  # 20以下の場合に通知
+            send_discord_notification(f"🔔 Fear & Greed Index: {index}")
