@@ -1,6 +1,6 @@
 import os
 import requests
-from yahoo_fin import stock_info as si  # Yahoo Finance APIを利用
+import re
 
 # Discord WebhookのURLを環境変数から取得
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
@@ -22,17 +22,30 @@ def send_discord_notification(message):
         raise Exception(f"❌ Webhook送信エラー: {response.status_code}, {response.text}")
 
 def get_fear_greed_index():
-    """Yahoo FinanceからFear & Greed Indexを取得"""
-    try:
-        # Fear & Greed Indexの取得
-        index = si.get_quote_table("^FNG", dict_result=True)["Previous Close"]
-        index = int(index)  # 整数に変換
+    """CNNのFear & Greed Indexを取得"""
+    url = "https://edition.cnn.com/markets/fear-and-greed"
+    headers = {"User-Agent": "Mozilla/5.0"}
 
+    try:
+        response = requests.get(url, headers=headers)
+        print(f"🌍 HTTP Status Code: {response.status_code}")  # ステータスコード出力
+
+        if response.status_code != 200:
+            print("❌ ERROR: CNN Fear & Greed Indexの取得に失敗しました")
+            return None
+
+        # Fear & Greed IndexをHTMLから取得する
+        match = re.search(r'Fear & Greed Index is (\d+)', response.text)
+        if not match:
+            print("❌ ERROR: Fear & Greed Indexの値を取得できませんでした")
+            return None
+
+        index = int(match.group(1))
         print(f"✅ Fear & Greed Index: {index}")
         return index
 
     except Exception as e:
-        print(f"❌ ERROR: Fear & Greed Indexの取得に失敗 - {str(e)}")
+        print(f"❌ ERROR: リクエスト中に例外発生 - {str(e)}")
         return None
 
 if __name__ == "__main__":
